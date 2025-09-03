@@ -4,25 +4,43 @@
 //use std::error::Error;
 //use std::path::Path;
 use crate::shared::{find_func_by_name, get_param_n_idx, insert_postfix, insert_prefix};
+use ansi_term::Colour::{Blue, Cyan, Green, Purple, Red, Yellow};
 use rand::distributions::{Distribution, Uniform};
 use std::error::Error;
 use std::ffi::OsStr;
-use ansi_term::Colour::{Red, Green, Yellow, Blue, Purple, Cyan};
-// use wasabi_wasm::{Global, GlobalOp, Instr, LoadOp, LocalOp, Module, Function, NumericOp, 
-use wasabi_wasm::{BinaryOp, Function, Global, GlobalOp, ImportOrPresent, Instr, LoadOp, Local, LocalOp, Module, StoreOp, UnaryOp};
+// use wasabi_wasm::{Global, GlobalOp, Instr, LoadOp, LocalOp, Module, Function, NumericOp,
+use wasabi_wasm::{
+    BinaryOp, Function, Global, GlobalOp, ImportOrPresent, Instr, LoadOp, Local, LocalOp, Module,
+    StoreOp, UnaryOp,
+};
 use wasabi_wasm::{FunctionType, Idx, Label, Memarg, Mutability, Val, ValType};
-use wasm_encoder::{BlockType};
+use wasm_encoder::BlockType;
 
 const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH: &str = "./funcs/signed_integer_overflow.wasm";
 const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL: &str = "./funcs/mul_check.wasm";
-const SIGNED_INTEGER_OVERFLOW_FUNCS: [&str; 6] = 
-["is_i32_sign_add_overflow","is_i64_sign_add_overflow",
-"is_i32_sign_sub_overflow","is_i64_sign_sub_overflow",
-"i32_is_mul_overflow","i64_is_mul_overflow"];
-const INI_FUNCS: [&str; 14] = 
-["__wasm_call_ctors", "_start", "emscripten_stack_init", "emscripten_stack_get_free",
-"emscripten_stack_get_base", "emscripten_stack_get_end", "emscripten_stack_get_current",
-"__memcpy", "__memset", "__fwritex", "__stdio_write", "fmt_fp", "__ashlti3", "__addtf3"
+const SIGNED_INTEGER_OVERFLOW_FUNCS: [&str; 6] = [
+    "is_i32_sign_add_overflow",
+    "is_i64_sign_add_overflow",
+    "is_i32_sign_sub_overflow",
+    "is_i64_sign_sub_overflow",
+    "i32_is_mul_overflow",
+    "i64_is_mul_overflow",
+];
+const INI_FUNCS: [&str; 14] = [
+    "__wasm_call_ctors",
+    "_start",
+    "emscripten_stack_init",
+    "emscripten_stack_get_free",
+    "emscripten_stack_get_base",
+    "emscripten_stack_get_end",
+    "emscripten_stack_get_current",
+    "__memcpy",
+    "__memset",
+    "__fwritex",
+    "__stdio_write",
+    "fmt_fp",
+    "__ashlti3",
+    "__addtf3",
 ];
 
 macro_rules! log_info {
@@ -45,40 +63,50 @@ fn is_string_in_ini_funcs(option_string: &Option<String>) -> bool {
     false
 }
 
-fn copy_function(func_name: &str, target_module: &mut Module, source_path: &str) -> Result<Idx<Function>, ()>{
+fn copy_function(
+    func_name: &str,
+    target_module: &mut Module,
+    source_path: &str,
+) -> Result<Idx<Function>, ()> {
     let s_module = Module::from_file(source_path);
-    if let Ok((source_module, _, _)) = s_module{
-        let function_to_move = source_module.functions()
-       .find(|f| f.1.name == Some(func_name.to_string()))
-       .expect("Function not found!")
-       .clone().1;
-       log_info!("Get function: {}",func_name);
+    if let Ok((source_module, _, _)) = s_module {
+        let function_to_move = source_module
+            .functions()
+            .find(|f| f.1.name == Some(func_name.to_string()))
+            .expect("Function not found!")
+            .clone()
+            .1;
+        log_info!("Get function: {}", func_name);
 
         //let mut target_module =  Module::from_file(target_path).expect("Fail to load the target module!");
         let type_ = &function_to_move.type_;
-        if let ImportOrPresent::Present(code) = &function_to_move.code{
+        if let ImportOrPresent::Present(code) = &function_to_move.code {
             let idx = target_module.add_function(
-                                type_.clone(),
-                                code.locals.clone().into_iter().map(|local| local.type_).collect(),
-                                code.body.clone());
+                type_.clone(),
+                code.locals
+                    .clone()
+                    .into_iter()
+                    .map(|local| local.type_)
+                    .collect(),
+                code.body.clone(),
+            );
             //target_module.remove_function_with_name("is_i32_sign_add_overflow".to_string());
             //target_module.remove_function_with_name("is_i64_sign_add_overflow".to_string());
             //let _ = target_module.to_file(target_path).expect("Fail to encode the Wasm Module!");
             //log_info!("Insert function({}) into target module",Yellow.paint(func_name));
             return Ok(idx);
-        }else{
+        } else {
             log_error!("Can not insert import function!");
             return Err(());
         }
-
-    }else if let Err(error) = s_module{
+    } else if let Err(error) = s_module {
         log_error!("Fail to load the Module: {:?}", error);
         return Err(());
     }
     Err(())
 }
 
-pub fn copy_function_test(){
+pub fn copy_function_test() {
     ////let func_type = FunctionType::new(&[ValType::I32, ValType::I32], &[]);
     //let func_name1 = "is_i32_sign_add_overflow";
     //let func_name2 = "is_i64_sign_add_overflow";
@@ -90,64 +118,65 @@ pub fn copy_function_test(){
     //let _ = target_module.to_file("/home/WORK/demo_ins.wasm").unwrap();
 }
 
-
 // pub fn add_proc_exit(input: &str, output: &str) -> Option<Idx<Function>> {
-    // let module_name = "wasi_snapshot_preview1".to_string();
-    // let func_name = "proc_exit".to_string();
-    // let result = Module::from_file(input);
-    // if let Ok((mut module, _,_)) = result {
-    //     for (idx, func) in module.functions() {
-    //         match func.import() {
-    //             None => continue,
-    //             Some((import_module,import_name)) => {
-    //                 if (import_module == module_name && import_name == func_name) {
-    //                     log_info!("There is already wasi_proc_exit() function.");
-    //                     let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
-    //                     return Some(idx);
-    //                 }
-    //             },
-    //         }
-    //     }
-    //     // if "proc_exit" have not been imported
-    //     let proc_func_type = FunctionType {
-    //         params: vec![ValType::I32].into(),
-    //         results: vec![ValType::I32].into(),
-    //     };
-    //     let func_idx = module.add_imported_function(proc_func_type, module_name, func_name, "__wasi_proc_exit".to_string());
-    //     log_info!("Add wasi_proc_exit() function.");
-    //     let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
-    //
-    //     return Some(func_idx);
-    //     //Function.new_imported("wasi_snapshot_preview1","proc_exit",)
-    //
-    // }else if let Err(error) = result {
-    //     log_error!("Fail to load the Module: {:?}", error);
-    //     return None;
-    // }else {
-    //     None
-    // }
+// let module_name = "wasi_snapshot_preview1".to_string();
+// let func_name = "proc_exit".to_string();
+// let result = Module::from_file(input);
+// if let Ok((mut module, _,_)) = result {
+//     for (idx, func) in module.functions() {
+//         match func.import() {
+//             None => continue,
+//             Some((import_module,import_name)) => {
+//                 if (import_module == module_name && import_name == func_name) {
+//                     log_info!("There is already wasi_proc_exit() function.");
+//                     let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+//                     return Some(idx);
+//                 }
+//             },
+//         }
+//     }
+//     // if "proc_exit" have not been imported
+//     let proc_func_type = FunctionType {
+//         params: vec![ValType::I32].into(),
+//         results: vec![ValType::I32].into(),
+//     };
+//     let func_idx = module.add_imported_function(proc_func_type, module_name, func_name, "__wasi_proc_exit".to_string());
+//     log_info!("Add wasi_proc_exit() function.");
+//     let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+//
+//     return Some(func_idx);
+//     //Function.new_imported("wasi_snapshot_preview1","proc_exit",)
+//
+// }else if let Err(error) = result {
+//     log_error!("Fail to load the Module: {:?}", error);
+//     return None;
+// }else {
+//     None
+// }
 // }
 
 pub fn null_reference(input: &str, output: &str) {
     let result = Module::from_file(input);
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-if let Ok((mut module, _,_)) = result {
+    if let Ok((mut module, _, _)) = result {
         for (idx, func) in module.functions() {
             match func.import() {
                 None => continue,
-                Some((import_module,import_name)) => {
-                    if (import_module == "wasi_snapshot_preview1".to_string() && import_name == "proc_exit".to_string()) {
+                Some((import_module, import_name)) => {
+                    if (import_module == "wasi_snapshot_preview1".to_string()
+                        && import_name == "proc_exit".to_string())
+                    {
                         proc_exit_idx = idx;
                     }
-                },
+                }
             }
         }
         for (_, func) in module.functions_mut() {
-            if let Some(cur_func_name) = &func.name.clone(){
-                if let Some(rest) = cur_func_name.strip_prefix("__"){
+            if let Some(cur_func_name) = &func.name.clone() {
+                if let Some(rest) = cur_func_name.strip_prefix("__") {
                     continue;
                 }
-                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()){
+                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
                     continue;
                 }
                 let func_name = &func.name.clone().unwrap();
@@ -161,12 +190,18 @@ if let Ok((mut module, _,_)) = result {
                             i += 1;
                             continue;
                         }
-                        match(&code.body[i-2], &code.body[i-1], &code.body[i]){
-                            (Instr::Local(LocalOp::Get, idx1), 
-                            Instr::Local(LocalOp::Get, idx2),
-                            Instr::Store(..)) => {
+                        match (&code.body[i - 2], &code.body[i - 1], &code.body[i]) {
+                            (
+                                Instr::Local(LocalOp::Get, idx1),
+                                Instr::Local(LocalOp::Get, idx2),
+                                Instr::Store(..),
+                            ) => {
                                 // 在store指令后插入检查local是否为0的指令
-                                let new_local1 = add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
                                 new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
                                 new_instrs.push(Instr::Const(Val::I32(0)));
                                 // new_instrs.push(Instr::Binary(BinaryOp::I32Eq));
@@ -174,32 +209,33 @@ if let Ok((mut module, _,_)) = result {
                                 new_instrs.push(Instr::Local(LocalOp::Set, new_local1));
                                 // new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-                                    new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-                                    new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出 
-                                    //new_instrs.push(Instr::Const(Val::I32(11))); // return 11
-                                    //new_instrs.push(Instr::Call(proc_exit_idx));                                
-                                    new_instrs.push(Instr::Unreachable);
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                                       //new_instrs.push(Instr::Const(Val::I32(11))); // return 11
+                                                                                       //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
                                 new_instrs.push(Instr::End);
                                 //log_info!("null_reference instrumentation in {}",&func_name);
-                            },
-                            _ => { },
+                            }
+                            _ => {}
                         }
                         i += 1;
                     } // end for while
                     code.body = new_instrs;
                 } // end for if let
-            }
-            else{
+            } else {
                 continue;
             }
         } // end for for
-        let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+        let _ = module
+            .to_file(output)
+            .expect("Fail to encode the Wasm Module!");
     } else if let Err(error) = result {
         log_error!("Fail to load the Module: {:?}", error);
     }
 }
 
-pub fn add_fresh_local(locals:&mut Vec<Local>, param_count:usize, ty:ValType) -> Idx<Local>{
+pub fn add_fresh_local(locals: &mut Vec<Local>, param_count: usize, ty: ValType) -> Idx<Local> {
     let new_idx = param_count + locals.len();
     locals.push(Local::new(ty));
     new_idx.into()
@@ -208,36 +244,50 @@ pub fn add_fresh_local(locals:&mut Vec<Local>, param_count:usize, ty:ValType) ->
 pub fn implicit_signed_integer_truncation(input: &str, output: &str) {
     let result = Module::from_file(input);
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-if let Ok((mut module, _,_)) = result {
+    if let Ok((mut module, _, _)) = result {
         for (idx, func) in module.functions() {
             match func.import() {
                 None => continue,
-                Some((import_module,import_name)) => {
-                    if (import_module == "wasi_snapshot_preview1".to_string() && import_name == "proc_exit".to_string()) {
+                Some((import_module, import_name)) => {
+                    if (import_module == "wasi_snapshot_preview1".to_string()
+                        && import_name == "proc_exit".to_string())
+                    {
                         proc_exit_idx = idx;
                     }
-                },
+                }
             }
         }
         for (_, func) in module.functions_mut() {
-            if let Some(cur_func_name) = &func.name.clone(){
-                if let Some(rest) = cur_func_name.strip_prefix("__"){
+            if let Some(cur_func_name) = &func.name.clone() {
+                if let Some(rest) = cur_func_name.strip_prefix("__") {
                     continue;
                 }
-                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()){
+                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
                     continue;
                 }
                 let func_param_count = func.param_count();
-                if let Some(code) = func.code_mut(){
+                if let Some(code) = func.code_mut() {
                     let mut new_instrs = Vec::new();
                     let mut i = 0;
                     while i < code.body.len() {
                         new_instrs.push(code.body[i].clone());
                         // if i >= 2 && matches!(code.body[i], Instr::Binary(BinaryOp::I32WrapI64)) {
                         if i >= 2 && matches!(code.body[i], Instr::Unary(UnaryOp::I32WrapI64)) {
-                            if let (Instr::Local(LocalOp::Get, idx1), Instr::Local(LocalOp::Set, idx2)) = (&code.body[i - 1], &code.body[i+1]) {
-                                let new_local1 = add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-                                let new_local2 = add_fresh_local(&mut code.locals, func_param_count, ValType::I64);
+                            if let (
+                                Instr::Local(LocalOp::Get, idx1),
+                                Instr::Local(LocalOp::Set, idx2),
+                            ) = (&code.body[i - 1], &code.body[i + 1])
+                            {
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                let new_local2 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I64,
+                                );
                                 // new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
@@ -251,22 +301,25 @@ if let Ok((mut module, _,_)) = result {
                                 new_instrs.push(Instr::Binary(BinaryOp::I64Eq));
                                 //new_instrs.push(Instr::Unary(UnaryOp::I64Eqz));
                                 // new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 如果相等，跳出
-                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出 
-                                //new_instrs.push(Instr::Const(Val::I32(12))); // return 12
-                                //new_instrs.push(Instr::Call(proc_exit_idx)); 
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                                       //new_instrs.push(Instr::Const(Val::I32(12))); // return 12
+                                                                                       //new_instrs.push(Instr::Call(proc_exit_idx));
                                 new_instrs.push(Instr::Unreachable); // 停止代码执行
                                 new_instrs.push(Instr::End);
                             }
                         }
-                        
+
                         i += 1;
                     }
                     code.body = new_instrs;
                 }
+            } else {
+                continue;
             }
-            else{ continue; }
         } // end for for
-        let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+        let _ = module
+            .to_file(output)
+            .expect("Fail to encode the Wasm Module!");
     } else if let Err(error) = result {
         log_error!("Fail to load the Module: {:?}", error);
     }
@@ -275,36 +328,50 @@ if let Ok((mut module, _,_)) = result {
 pub fn implicit_unsigned_integer_truncation(input: &str, output: &str) {
     let result = Module::from_file(input);
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-if let Ok((mut module, _,_)) = result {
+    if let Ok((mut module, _, _)) = result {
         for (idx, func) in module.functions() {
             match func.import() {
                 None => continue,
-                Some((import_module,import_name)) => {
-                    if (import_module == "wasi_snapshot_preview1".to_string() && import_name == "proc_exit".to_string()) {
+                Some((import_module, import_name)) => {
+                    if (import_module == "wasi_snapshot_preview1".to_string()
+                        && import_name == "proc_exit".to_string())
+                    {
                         proc_exit_idx = idx;
                     }
-                },
+                }
             }
         }
         for (_, func) in module.functions_mut() {
             let func_param_count = func.param_count();
-            if let Some(cur_func_name) = &func.name.clone(){
-                if let Some(rest) = cur_func_name.strip_prefix("__"){
+            if let Some(cur_func_name) = &func.name.clone() {
+                if let Some(rest) = cur_func_name.strip_prefix("__") {
                     continue;
                 }
-                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()){
+                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
                     continue;
                 }
-                if let Some(code) = func.code_mut(){
+                if let Some(code) = func.code_mut() {
                     let mut new_instrs = Vec::new();
                     let mut i = 0;
                     while i < code.body.len() {
                         new_instrs.push(code.body[i].clone());
                         // if i >= 2 && matches!(code.body[i], Instr::Binary(BinaryOp::I32WrapI64)) {
                         if i >= 2 && matches!(code.body[i], Instr::Unary(UnaryOp::I32WrapI64)) {
-                            if let (Instr::Local(LocalOp::Get, idx1), Instr::Local(LocalOp::Set, idx2)) = (&code.body[i - 1], &code.body[i+1]) {
-                                let new_local1 = add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-                                let new_local2 = add_fresh_local(&mut code.locals, func_param_count, ValType::I64);
+                            if let (
+                                Instr::Local(LocalOp::Get, idx1),
+                                Instr::Local(LocalOp::Set, idx2),
+                            ) = (&code.body[i - 1], &code.body[i + 1])
+                            {
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                let new_local2 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I64,
+                                );
                                 // new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
@@ -319,24 +386,25 @@ if let Ok((mut module, _,_)) = result {
                                 new_instrs.push(Instr::Binary(BinaryOp::I64Eq));
                                 //new_instrs.push(Instr::Unary(UnaryOp::I64Eqz));
                                 // new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 如果相等，跳出
-                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出 
-                                //new_instrs.push(Instr::Const(Val::I32(13))); // return 13
-                                //new_instrs.push(Instr::Call(proc_exit_idx)); 
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                                       //new_instrs.push(Instr::Const(Val::I32(13))); // return 13
+                                                                                       //new_instrs.push(Instr::Call(proc_exit_idx));
                                 new_instrs.push(Instr::Unreachable); // 停止代码执行
                                 new_instrs.push(Instr::End);
                             }
                         }
-                        
+
                         i += 1;
                     }
                     code.body = new_instrs;
                 }
-            }
-            else{
+            } else {
                 continue;
             }
         } // end for for
-        let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+        let _ = module
+            .to_file(output)
+            .expect("Fail to encode the Wasm Module!");
     } else if let Err(error) = result {
         log_error!("Fail to load the Module: {:?}", error);
     }
@@ -346,43 +414,51 @@ if let Ok((mut module, _,_)) = result {
 pub fn float_cast_overflow(input: &str, output: &str) {
     let result = Module::from_file(input);
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-if let Ok((mut module, _,_)) = result {
+    if let Ok((mut module, _, _)) = result {
         for (idx, func) in module.functions() {
             match func.import() {
                 None => continue,
-                Some((import_module,import_name)) => {
-                    if (import_module == "wasi_snapshot_preview1".to_string() && import_name == "proc_exit".to_string()) {
+                Some((import_module, import_name)) => {
+                    if (import_module == "wasi_snapshot_preview1".to_string()
+                        && import_name == "proc_exit".to_string())
+                    {
                         proc_exit_idx = idx;
                     }
-                },
+                }
             }
         }
         for (_, func) in module.functions_mut() {
             let func_param_count = func.param_count();
-            if let Some(cur_func_name) = &func.name.clone(){
-                if let Some(rest) = cur_func_name.strip_prefix("__"){
+            if let Some(cur_func_name) = &func.name.clone() {
+                if let Some(rest) = cur_func_name.strip_prefix("__") {
                     continue;
                 }
-                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()){
+                if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
                     continue;
                 }
-                if let Some(code) = func.code_mut(){
+                if let Some(code) = func.code_mut() {
                     let mut flag = false;
                     let mut new_instrs = Vec::new();
                     let mut i = 0;
                     while i < code.body.len() {
                         new_instrs.push(code.body[i].clone());
-                        if i < 2{
+                        if i < 2 {
                             i += 1;
                             continue;
                         }
-    // -------------------------------------f32.demote_f64, double2float----------------------------------------------
-                        match(&code.body[i-2], &code.body[i-1], &code.body[i]){
-                            (Instr::Local(LocalOp::Get, idx1), 
-                            // Instr::Binary(BinaryOp::F32DemoteF64), 
-                            Instr::Unary(UnaryOp::F32DemoteF64), 
-                            Instr::Local(LocalOp::Set, idx2)) => {
-                                let new_local1 = add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                        // -------------------------------------f32.demote_f64, double2float----------------------------------------------
+                        match (&code.body[i - 2], &code.body[i - 1], &code.body[i]) {
+                            (
+                                Instr::Local(LocalOp::Get, idx1),
+                                // Instr::Binary(BinaryOp::F32DemoteF64),
+                                Instr::Unary(UnaryOp::F32DemoteF64),
+                                Instr::Local(LocalOp::Set, idx2),
+                            ) => {
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
                                 new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
                                 // new_instrs.push(Instr::Binary(BinaryOp::F64PromoteF32));
                                 new_instrs.push(Instr::Unary(UnaryOp::F64PromoteF32));
@@ -392,31 +468,31 @@ if let Ok((mut module, _,_)) = result {
                                 new_instrs.push(Instr::Local(LocalOp::Set, new_local1));
                                 // new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
                                 new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-                                    new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-                                    // new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                    new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出 
-                                    //new_instrs.push(Instr::Const(Val::I32(14))); // return 14
-                                    //new_instrs.push(Instr::Call(proc_exit_idx));
-                                    new_instrs.push(Instr::Unreachable);
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                // new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                                       //new_instrs.push(Instr::Const(Val::I32(14))); // return 14
+                                                                                       //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
                                 new_instrs.push(Instr::End);
-                            },
-                            _ => { },
+                            }
+                            _ => {}
                         }
-    // ---------------------------------------------------------------------------------------------------------------
+                        // ---------------------------------------------------------------------------------------------------------------
 
-    // -------------------------------------i32.trunc_f32_s & i32.trunc_f64_s ----------------------------------------
-                        match(&code.body[i]){
+                        // -------------------------------------i32.trunc_f32_s & i32.trunc_f64_s ----------------------------------------
+                        match (&code.body[i]) {
                             // i32.trunc_f32_s, float2int
                             Instr::Unary(UnaryOp::I32TruncF32S) => {
                                 flag = true;
-                            },
+                            }
                             // i32.trunc_f64_s, double2int
                             Instr::Unary(UnaryOp::I32TruncF64S) => {
                                 flag = true;
-                            },
-                            _ => { },
+                            }
+                            _ => {}
                         }
-                        match(&code.body[i-1],&code.body[i]){
+                        match (&code.body[i - 1], &code.body[i]) {
                             // end & i32.const -2147483648
                             (Instr::End, Instr::Const(Val::I32(-2147483648))) => {
                                 if flag {
@@ -424,37 +500,36 @@ if let Ok((mut module, _,_)) = result {
                                     //new_instrs.push(Instr::Call(proc_exit_idx));
                                     new_instrs.push(Instr::Unreachable);
                                 }
-                            },
-                            _ => { },
+                            }
+                            _ => {}
                         }
-    // ---------------------------------------------------------------------------------------------------------------
+                        // ---------------------------------------------------------------------------------------------------------------
                         i += 1;
-                    }// end for while
+                    } // end for while
                     code.body = new_instrs;
                 } // end for if_let
-            }
-            else{
+            } else {
                 continue;
             }
-        }// end for for
-        let _ = module.to_file(output).expect("Fail to encode the Wasm Module!");
+        } // end for for
+        let _ = module
+            .to_file(output)
+            .expect("Fail to encode the Wasm Module!");
     } else if let Err(error) = result {
         log_error!("Fail to load the Module: {:?}", error);
     }
 }
 
-
- 
-
 pub fn non_return(input: &str, output: &str) {
     let result = Module::from_file(input);
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-    if let Ok((mut module, _,_)) = result {
+    if let Ok((mut module, _, _)) = result {
         for (idx, func) in module.functions() {
             match func.import() {
                 None => continue,
-                Some((import_module,import_name)) => {
-                    if (import_module == "wasi_snapshot_preview1".to_string() && import_name == "proc_exit".to_string())
+                Some((import_module, import_name)) => {
+                    if (import_module == "wasi_snapshot_preview1".to_string()
+                        && import_name == "proc_exit".to_string())
                     {
                         proc_exit_idx = idx;
                     }
@@ -1025,7 +1100,7 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
     let mut i64_sub_flag = false;
     let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
     eprintln!("DBG: : test.rs:933: input={:#?}", input);
-    let (mut module,_,_) = Module::from_file(input).expect("Fail to load the Module");
+    let (mut module, _, _) = Module::from_file(input).expect("Fail to load the Module");
     for (idx, func) in module.functions() {
         match func.import() {
             None => continue,
@@ -1128,8 +1203,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Call(i32_add_target_index));
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
@@ -1154,8 +1229,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Call(i64_add_target_index));
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
@@ -1180,8 +1255,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Call(i32_sub_target_index));
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
@@ -1207,8 +1282,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
 
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
@@ -1229,8 +1304,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Call(i32_mul_target_index));
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
@@ -1251,8 +1326,8 @@ pub fn signed_integer_overflow(input: &str, output: &str) {
                             new_instrs.push(Instr::Call(i64_mul_target_index));
                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                                                                                   //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                                   //new_instrs.push(Instr::Call(proc_exit_idx));
                             new_instrs.push(Instr::Unreachable);
                             new_instrs.push(Instr::End);
                         }
