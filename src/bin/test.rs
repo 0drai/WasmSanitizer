@@ -105,13 +105,20 @@ fn main() {
         );
     },
     "all" => {
-        wasm_instrumenter::test::shift(input,output);
         wasm_instrumenter::test::null_reference(input,output);
-        wasm_instrumenter::test::signed_integer_overflow(input,output);
-        wasm_instrumenter::test::float_cast_overflow(input,output);
-        wasm_instrumenter::test::float_divide_by_zero(input,output);
         wasm_instrumenter::test::implicit_signed_integer_truncation(input,output);
-    },
+        wasm_instrumenter::test::implicit_unsigned_integer_truncation(input,output);
+        wasm_instrumenter::test::float_cast_overflow(input,output);
+        wasm_instrumenter::test::non_return(input,output);
+        wasm_instrumenter::test::implicit_integer_sign_change(input,output);
+        wasm_instrumenter::test::shift(input,output);
+        //wasm_instrumenter::test::copy_function_test(input,output);
+        wasm_instrumenter::test::unsigned_integer_overflow(input,output);
+        wasm_instrumenter::test::signed_integer_overflow(input,output);
+        wasm_instrumenter::test::float_divide_by_zero(input,output);
+        wasm_instrumenter::test::instrument_with_heap_canary_check(input,output);
+        wasm_instrumenter::test::instrument_with_stack_canary_check(input,output);
+    }
         _ => println!("No func matched!")
     }
     
