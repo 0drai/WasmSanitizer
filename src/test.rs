@@ -13,10 +13,8 @@ use wasabi_wasm::{BinaryOp, Function, Global, GlobalOp, ImportOrPresent, Instr, 
 use wasabi_wasm::{FunctionType, Idx, Label, Memarg, Mutability, Val, ValType};
 use wasm_encoder::{BlockType};
 
-const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH: &str = 
-"/home/WORK/PAPER2/rust-wasm-instrumentation/funcs/signed_integer_overflow.wasm";
-const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL: &str = 
-"/home/WORK/PAPER2/rust-wasm-instrumentation/funcs/mul_check.wasm";
+const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH: &str = "./funcs/signed_integer_overflow.wasm";
+const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL: &str = "./funcs/mul_check.wasm";
 const SIGNED_INTEGER_OVERFLOW_FUNCS: [&str; 6] = 
 ["is_i32_sign_add_overflow","is_i64_sign_add_overflow",
 "is_i32_sign_sub_overflow","is_i64_sign_sub_overflow",
@@ -47,39 +45,38 @@ fn is_string_in_ini_funcs(option_string: &Option<String>) -> bool {
     false
 }
 
-// fn copy_function(func_name: &str, target_module: &mut Module, source_path: &str) -> Result<Idx<Function>, ()>{
-    // let s_module = Module::from_file(source_path);
-    // if let Ok(source_module) = s_module{
-    //     let function_to_move = source_module.0.functions()
-    //    .find(|f| f.1.name == Some(func_name.to_string()))
-    //    .expect("Function not found!")
-    //    .clone().1;
-    //    //log_info!("Get function: {}",func_name);
-    //
-    //     //let mut target_module =  Module::from_file(target_path).expect("Fail to load the target module!");
-    //     let type_ = &function_to_move.type_;
-    //     if let ImportOrPresent::Present(code) = &function_to_move.code{
-    //         let idx = target_module.add_function_with_name(
-    //                             type_.clone(),
-    //                             code.locals.clone().into_iter().map(|local| local.type_).collect(),
-    //                             code.body.clone(),
-    //                             func_name.to_string());
-    //         //target_module.remove_function_with_name("is_i32_sign_add_overflow".to_string());
-    //         //target_module.remove_function_with_name("is_i64_sign_add_overflow".to_string());
-    //         //let _ = target_module.to_file(target_path).expect("Fail to encode the Wasm Module!");
-    //         //log_info!("Insert function({}) into target module",Yellow.paint(func_name));
-    //         return Ok(idx);
-    //     }else{
-    //         log_error!("Can not insert import function!");
-    //         return Err(());
-    //     }
-    //
-    // }else if let Err(error) = s_module{
-    //     log_error!("Fail to load the Module: {:?}", error);
-    //     return Err(());
-    // }
-    // return Err(());
-// }
+fn copy_function(func_name: &str, target_module: &mut Module, source_path: &str) -> Result<Idx<Function>, ()>{
+    let s_module = Module::from_file(source_path);
+    if let Ok((source_module, _, _)) = s_module{
+        let function_to_move = source_module.functions()
+       .find(|f| f.1.name == Some(func_name.to_string()))
+       .expect("Function not found!")
+       .clone().1;
+       log_info!("Get function: {}",func_name);
+
+        //let mut target_module =  Module::from_file(target_path).expect("Fail to load the target module!");
+        let type_ = &function_to_move.type_;
+        if let ImportOrPresent::Present(code) = &function_to_move.code{
+            let idx = target_module.add_function(
+                                type_.clone(),
+                                code.locals.clone().into_iter().map(|local| local.type_).collect(),
+                                code.body.clone());
+            //target_module.remove_function_with_name("is_i32_sign_add_overflow".to_string());
+            //target_module.remove_function_with_name("is_i64_sign_add_overflow".to_string());
+            //let _ = target_module.to_file(target_path).expect("Fail to encode the Wasm Module!");
+            //log_info!("Insert function({}) into target module",Yellow.paint(func_name));
+            return Ok(idx);
+        }else{
+            log_error!("Can not insert import function!");
+            return Err(());
+        }
+
+    }else if let Err(error) = s_module{
+        log_error!("Fail to load the Module: {:?}", error);
+        return Err(());
+    }
+    Err(())
+}
 
 pub fn copy_function_test(){
     ////let func_type = FunctionType::new(&[ValType::I32, ValType::I32], &[]);
@@ -1022,531 +1019,531 @@ pub fn unsigned_integer_overflow(input: &str, output: &str) {
 }
 
 pub fn signed_integer_overflow(input: &str, output: &str) {
-    // let mut i32_add_flag = false;
-    // let mut i64_add_flag = false;
-    // let mut i32_sub_flag = false;
-    // let mut i64_sub_flag = false;
-    // let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
-    // eprintln!("DBG: : test.rs:933: input={:#?}", input);
-    // let (mut module,_,_) = Module::from_file(input).expect("Fail to load the Module");
-    // for (idx, func) in module.functions() {
-    //     match func.import() {
-    //         None => continue,
-    //         Some((import_module, import_name)) => {
-    //             if (import_module == "wasi_snapshot_preview1".to_string()
-    //                 && import_name == "proc_exit".to_string())
-    //             {
-    //                 proc_exit_idx = idx;
-    //             }
-    //         }
-    //     }
-    // }
-    // let i32_add_target_index: Idx<Function> = copy_function(
-    //     "is_i32_sign_add_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
-    // )
-    // .expect("Fail to insert the func!");
-    // let i64_add_target_index: Idx<Function> = copy_function(
-    //     "is_i64_sign_add_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
-    // )
-    // .expect("Fail to insert the func!");
-    // let i32_sub_target_index: Idx<Function> = copy_function(
-    //     "is_i32_sign_sub_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
-    // )
-    // .expect("Fail to insert the func!");
-    // let i64_sub_target_index: Idx<Function> = copy_function(
-    //     "is_i64_sign_sub_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
-    // )
-    // .expect("Fail to insert the func!");
-    // let i32_mul_target_index: Idx<Function> = copy_function(
-    //     "i32_is_mul_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL,
-    // )
-    // .expect("Fail to insert the func!");
-    // let i64_mul_target_index: Idx<Function> = copy_function(
-    //     "i64_is_mul_overflow",
-    //     &mut module,
-    //     SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL,
-    // )
-    // .expect("Fail to insert the func!");
-    // for (idx, func) in module.functions_mut() {
-    //     let func_param_count = func.param_count();
-    //     if is_string_in_ini_funcs(&func.name) {
-    //         // skip funcs in INI_FUNCS
-    //         continue;
-    //     }
-    //     let result_len = func.type_.results().len();
-    //     //log_info!("idx = {}",idx.into_inner());
-    //     if let Some(cur_func_name) = &func.name.clone() {
-    //         if let Some(rest) = cur_func_name.strip_prefix("__") {
-    //             continue;
-    //         }
-    //         if let Some(rest) = cur_func_name.strip_prefix("std::") {
-    //             continue;
-    //         }
-    //         if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
-    //             continue;
-    //         }
-    //         if let Some(code) = func.code_mut() {
-    //             let mut new_instrs = Vec::new();
-    //             let mut i = 0;
-    //             while i < code.body.len() {
-    //                 new_instrs.push(code.body[i].clone());
-    //                 if i < 2 || i + 1 == code.body.len() {
-    //                     i += 1;
-    //                     continue;
-    //                 }
-    //                 match (
-    //                     &code.body[i - 2],
-    //                     &code.body[i - 1],
-    //                     &code.body[i],
-    //                     &code.body[i + 1],
-    //                 ) {
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I32Add),
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         // I32Add
-    //                         if !i32_add_flag {
-    //                             i32_add_flag = true;
-    //                         }
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("is_i32_sign_add_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i32_add_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I64Add),
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         // I64Add
-    //                         if !i32_add_flag {
-    //                             i64_add_flag = true;
-    //                         }
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("is_i64_sign_add_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i64_add_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I32Sub),
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         // I32Sub
-    //                         if !i32_sub_flag {
-    //                             i32_sub_flag = true;
-    //                         }
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("is_i32_sign_sub_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i32_sub_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I64Sub),
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         // I64Sub
-    //                         if !i64_sub_flag {
-    //                             i64_sub_flag = true;
-    //                         }
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("is_i64_sign_sub_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i64_sub_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I32Mul), // I32Mul
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("i32_is_mul_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i32_mul_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I64Mul), // I64Mul
-    //                         Instr::Local(LocalOp::Set, _idx3),
-    //                     ) => {
-    //                         log_info!(
-    //                             "Call function({}) in func({})",
-    //                             Yellow.paint("i64_is_mul_overflow"),
-    //                             Yellow.paint(cur_func_name)
-    //                         );
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                         new_instrs.push(Instr::Call(i64_mul_target_index));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                                                                 //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                                                                 //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     _ => {}
-    //                 }
-    //
-    //                 if i < 12 || i + 1 == code.body.len() {
-    //                     i += 1;
-    //                     continue;
-    //                 }
-    //                 match (
-    //                     &code.body[i - 12],
-    //                     &code.body[i - 11],
-    //                     &code.body[i - 10],
-    //                     &code.body[i - 9],
-    //                     &code.body[i - 8],
-    //                     &code.body[i - 7],
-    //                     &code.body[i - 6],
-    //                     &code.body[i - 5],
-    //                     &code.body[i - 4],
-    //                     &code.body[i - 3],
-    //                     &code.body[i - 2],
-    //                     &code.body[i - 1],
-    //                     &code.body[i],
-    //                     &code.body[i + 1],
-    //                 ) {
-    //                     (
-    //                         Instr::Const(Val::I32(num)),
-    //                         Instr::Local(LocalOp::Set, _1),
-    //                         Instr::Local(LocalOp::Get, _2),
-    //                         Instr::Local(LocalOp::Get, _3),
-    //                         Instr::Binary(BinaryOp::I32Shl),
-    //                         Instr::Local(LocalOp::Set, _4),
-    //                         Instr::Local(LocalOp::Get, _5),
-    //                         Instr::Local(LocalOp::Get, _6),
-    //                         Instr::Binary(BinaryOp::I32ShrS),
-    //                         Instr::Local(LocalOp::Set, _7),
-    //                         Instr::Local(LocalOp::Get, idx1),
-    //                         Instr::Local(LocalOp::Get, idx2),
-    //                         Instr::Binary(BinaryOp::I32Mul),
-    //                         Instr::Local(LocalOp::Set, idx3),
-    //                     ) => {
-    //                         // char mul
-    //                         if *num == 24 {
-    //                             log_info!(
-    //                                 "Char mul check in func({})",
-    //                                 Yellow.paint(cur_func_name)
-    //                             );
-    //
-    //                             let new_local1 = add_fresh_local(
-    //                                 &mut code.locals,
-    //                                 func_param_count,
-    //                                 ValType::I32,
-    //                             );
-    //                             let new_local2 = add_fresh_local(
-    //                                 &mut code.locals,
-    //                                 func_param_count,
-    //                                 ValType::I32,
-    //                             );
-    //                             new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                             //new_instrs.push(Instr::Const(Val::I32(24)));
-    //                             //new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 24
-    //                             //new_instrs.push(Instr::Const(Val::I32(24)));
-    //                             //new_instrs.push(Instr::Binary(BinaryOp::I32ShrS));  // result >> 24
-    //                             new_instrs.push(Instr::Const(Val::I32(255)));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                             new_instrs.push(Instr::Const(Val::I32(0)));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32Or));
-    //                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                             new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
-    //                             new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
-    //                             new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
-    //                             //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                             //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                             new_instrs.push(Instr::Unreachable);
-    //                             new_instrs.push(Instr::End);
-    //                         } else if *num == 16 {
-    //                             // short mul
-    //                             log_info!(
-    //                                 "Short mul check in func({})",
-    //                                 Yellow.paint(cur_func_name)
-    //                             );
-    //
-    //                             let new_local1 = add_fresh_local(
-    //                                 &mut code.locals,
-    //                                 func_param_count,
-    //                                 ValType::I32,
-    //                             );
-    //                             let new_local2 = add_fresh_local(
-    //                                 &mut code.locals,
-    //                                 func_param_count,
-    //                                 ValType::I32,
-    //                             );
-    //                             new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                             //new_instrs.push(Instr::Const(Val::I32(16)));
-    //                             //new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 16
-    //                             //new_instrs.push(Instr::Const(Val::I32(16)));
-    //                             //new_instrs.push(Instr::Binary(BinaryOp::I32ShrS));  // result >> 16
-    //                             new_instrs.push(Instr::Const(Val::I32(65535)));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                             new_instrs.push(Instr::Const(Val::I32(0)));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32Or));
-    //                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                             new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
-    //                             new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
-    //                             new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
-    //                             //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                             //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                             new_instrs.push(Instr::Unreachable);
-    //                             new_instrs.push(Instr::End);
-    //                         }
-    //                     }
-    //                     _ => {}
-    //                 }
-    //
-    //                 if i + 4 >= code.body.len() {
-    //                     i += 1;
-    //                     continue;
-    //                 }
-    //                 match (
-    //                     &code.body[i],
-    //                     &code.body[i + 1],
-    //                     &code.body[i + 2],
-    //                     &code.body[i + 3],
-    //                     &code.body[i + 4],
-    //                 ) {
-    //                     (
-    //                         Instr::Binary(BinaryOp::I32Add),
-    //                         Instr::Local(LocalOp::Set, _1),
-    //                         Instr::Local(LocalOp::Get, _2),
-    //                         Instr::Local(LocalOp::Get, _3),
-    //                         Instr::Store(StoreOp::I32Store8, ..),
-    //                     ) => {
-    //                         // char add
-    //                         log_info!("Char add check in func({})", Yellow.paint(cur_func_name));
-    //                         let new_local1 =
-    //                             add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-    //                         let new_local2 =
-    //                             add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-    //                         new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                         new_instrs.push(Instr::Const(Val::I32(24)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 24
-    //                         new_instrs.push(Instr::Const(Val::I32(24)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32ShrS)); // result >> 24
-    //                         new_instrs.push(Instr::Const(Val::I32(127)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                         new_instrs.push(Instr::Const(Val::I32(-128)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32Or));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
-    //                         //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                         //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     (
-    //                         Instr::Binary(BinaryOp::I32Add),
-    //                         Instr::Local(LocalOp::Set, _1),
-    //                         Instr::Local(LocalOp::Get, _2),
-    //                         Instr::Local(LocalOp::Get, _3),
-    //                         Instr::Store(StoreOp::I32Store16, ..),
-    //                     ) => {
-    //                         // short add
-    //                         log_info!("Short add check in func({})", Yellow.paint(cur_func_name));
-    //                         let new_local1 =
-    //                             add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-    //                         let new_local2 =
-    //                             add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
-    //                         new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                         new_instrs.push(Instr::Const(Val::I32(16)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 16
-    //                         new_instrs.push(Instr::Const(Val::I32(16)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32ShrS)); // result >> 16
-    //                         new_instrs.push(Instr::Const(Val::I32(32767)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
-    //                         new_instrs.push(Instr::Const(Val::I32(-32768)));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
-    //                         new_instrs.push(Instr::Binary(BinaryOp::I32Or));
-    //                         new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                         new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                         new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
-    //                         new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
-    //                         //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                         //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                         new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     }
-    //                     _ => {}
-    //                 }
-    //
-    //                 /* if (i+ 4 >= code.body.len() || i < 2){
-    //                     i += 1;
-    //                     continue;
-    //                 }
-    //                 match (&code.body[i-2],&code.body[i-1],&code.body[i],&code.body[i+1],&code.body[i+2],
-    //                         &code.body[i+3],&code.body[i+4]){
-    //                     (Instr::Local(LocalOp::Get,idx1), // b
-    //                     Instr::Local(LocalOp::Get,idx2), // a
-    //                     Instr::Binary(BinaryOp::I32Shl), // I32Shl
-    //                     Instr::Local(LocalOp::Set,_idx3),
-    //                     Instr::Local(LocalOp::Get,idx4),
-    //                     Instr::Local(LocalOp::Get,idx5),
-    //                     Instr::Binary(BinaryOp::I32ShrS), // I32Shr_S
-    //                     ) => {
-    //
-    //                         log_info!("Call function({}) in func({})"
-    //                             ,Yellow.paint("i32_is_shift_overflow")
-    //                             ,Yellow.paint(cur_func_name));
-    //                             new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //
-    //                             new_instrs.push(Instr::Const(Val::I32(1)));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I32Shl));
-    //
-    //                             new_instrs.push(Instr::Call(i32_mul_target_index));
-    //                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                             //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                             //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                             new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     },
-    //                     (Instr::Local(LocalOp::Get,idx1),
-    //                     Instr::Local(LocalOp::Get,idx2),
-    //                     Instr::Binary(BinaryOp::I64Shl), // I64SHl
-    //                     Instr::Local(LocalOp::Set,_idx3)) => {
-    //                         log_info!("Call function({}) in func({})"
-    //                             ,Yellow.paint("i64_is_shift_overflow")
-    //                             ,Yellow.paint(cur_func_name));
-    //                         new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
-    //
-    //                             new_instrs.push(Instr::Const(Val::I64(1)));
-    //                             new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
-    //                             new_instrs.push(Instr::Binary(BinaryOp::I64Shl));
-    //
-    //                             new_instrs.push(Instr::Call(i64_mul_target_index));
-    //                             new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
-    //                             new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
-    //                         // new_instrs.push(Instr::Const(Val::I32(19))); // return 19
-    //                             //new_instrs.push(Instr::Call(proc_exit_idx));
-    //                             new_instrs.push(Instr::Unreachable);
-    //                         new_instrs.push(Instr::End);
-    //                     },
-    //                     _ => {},
-    //                 } */
-    //                 i += 1;
-    //             } // end for while
-    //             code.body = new_instrs;
-    //         } // end for if_let
-    //     } else {
-    //         continue;
-    //     }
-    // } // end for for
-    //   /*     if !i32_add_flag{
-    //       module.remove_function_with_name("is_i32_sign_add_overflow".to_string());
-    //       log_info!("Remove function({}) from target module",Cyan.paint("is_i32_sign_add_overflow"));
-    //   }
-    //   if !i64_add_flag{
-    //       module.remove_function_with_name("is_i64_sign_add_overflow".to_string());
-    //       log_info!("Remove function({}) from target module",Cyan.paint("is_i64_sign_add_overflow"));
-    //   }
-    //   if !i32_sub_flag{
-    //       module.remove_function_with_name("is_i32_sign_sub_overflow".to_string());
-    //       log_info!("Remove function({}) from target module",Cyan.paint("is_i32_sign_sub_overflow"));
-    //   }
-    //   if !i64_sub_flag{
-    //       module.remove_function_with_name("is_i64_sign_sub_overflow".to_string());
-    //       log_info!("Remove function({}) from target module",Cyan.paint("is_i64_sign_sub_overflow"));
-    //   } */
-    // let _ = module
-    //     .to_file(output)
-    //     .expect("Fail to encode the Wasm Module!");
+    let mut i32_add_flag = false;
+    let mut i64_add_flag = false;
+    let mut i32_sub_flag = false;
+    let mut i64_sub_flag = false;
+    let mut proc_exit_idx: Idx<Function> = Idx::<Function>::from(0 as usize);
+    eprintln!("DBG: : test.rs:933: input={:#?}", input);
+    let (mut module,_,_) = Module::from_file(input).expect("Fail to load the Module");
+    for (idx, func) in module.functions() {
+        match func.import() {
+            None => continue,
+            Some((import_module, import_name)) => {
+                if (import_module == "wasi_snapshot_preview1".to_string()
+                    && import_name == "proc_exit".to_string())
+                {
+                    proc_exit_idx = idx;
+                }
+            }
+        }
+    }
+    let i32_add_target_index: Idx<Function> = copy_function(
+        "is_i32_sign_add_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
+    )
+    .expect("Fail to insert the func!");
+    let i64_add_target_index: Idx<Function> = copy_function(
+        "is_i64_sign_add_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
+    )
+    .expect("Fail to insert the func!");
+    let i32_sub_target_index: Idx<Function> = copy_function(
+        "is_i32_sign_sub_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
+    )
+    .expect("Fail to insert the func!");
+    let i64_sub_target_index: Idx<Function> = copy_function(
+        "is_i64_sign_sub_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH,
+    )
+    .expect("Fail to insert the func!");
+    let i32_mul_target_index: Idx<Function> = copy_function(
+        "i32_is_mul_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL,
+    )
+    .expect("Fail to insert the func!");
+    let i64_mul_target_index: Idx<Function> = copy_function(
+        "i64_is_mul_overflow",
+        &mut module,
+        SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL,
+    )
+    .expect("Fail to insert the func!");
+    for (idx, func) in module.functions_mut() {
+        let func_param_count = func.param_count();
+        if is_string_in_ini_funcs(&func.name) {
+            // skip funcs in INI_FUNCS
+            continue;
+        }
+        let result_len = func.type_.results().len();
+        //log_info!("idx = {}",idx.into_inner());
+        if let Some(cur_func_name) = &func.name.clone() {
+            if let Some(rest) = cur_func_name.strip_prefix("__") {
+                continue;
+            }
+            if let Some(rest) = cur_func_name.strip_prefix("std::") {
+                continue;
+            }
+            if SIGNED_INTEGER_OVERFLOW_FUNCS.contains(&cur_func_name.as_str()) {
+                continue;
+            }
+            if let Some(code) = func.code_mut() {
+                let mut new_instrs = Vec::new();
+                let mut i = 0;
+                while i < code.body.len() {
+                    new_instrs.push(code.body[i].clone());
+                    if i < 2 || i + 1 == code.body.len() {
+                        i += 1;
+                        continue;
+                    }
+                    match (
+                        &code.body[i - 2],
+                        &code.body[i - 1],
+                        &code.body[i],
+                        &code.body[i + 1],
+                    ) {
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I32Add),
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            // I32Add
+                            if !i32_add_flag {
+                                i32_add_flag = true;
+                            }
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("is_i32_sign_add_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i32_add_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I64Add),
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            // I64Add
+                            if !i32_add_flag {
+                                i64_add_flag = true;
+                            }
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("is_i64_sign_add_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i64_add_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I32Sub),
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            // I32Sub
+                            if !i32_sub_flag {
+                                i32_sub_flag = true;
+                            }
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("is_i32_sign_sub_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i32_sub_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I64Sub),
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            // I64Sub
+                            if !i64_sub_flag {
+                                i64_sub_flag = true;
+                            }
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("is_i64_sign_sub_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i64_sub_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I32Mul), // I32Mul
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("i32_is_mul_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i32_mul_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I64Mul), // I64Mul
+                            Instr::Local(LocalOp::Set, _idx3),
+                        ) => {
+                            log_info!(
+                                "Call function({}) in func({})",
+                                Yellow.paint("i64_is_mul_overflow"),
+                                Yellow.paint(cur_func_name)
+                            );
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                            new_instrs.push(Instr::Call(i64_mul_target_index));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                                                    //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                                                    //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        _ => {}
+                    }
+
+                    if i < 12 || i + 1 == code.body.len() {
+                        i += 1;
+                        continue;
+                    }
+                    match (
+                        &code.body[i - 12],
+                        &code.body[i - 11],
+                        &code.body[i - 10],
+                        &code.body[i - 9],
+                        &code.body[i - 8],
+                        &code.body[i - 7],
+                        &code.body[i - 6],
+                        &code.body[i - 5],
+                        &code.body[i - 4],
+                        &code.body[i - 3],
+                        &code.body[i - 2],
+                        &code.body[i - 1],
+                        &code.body[i],
+                        &code.body[i + 1],
+                    ) {
+                        (
+                            Instr::Const(Val::I32(num)),
+                            Instr::Local(LocalOp::Set, _1),
+                            Instr::Local(LocalOp::Get, _2),
+                            Instr::Local(LocalOp::Get, _3),
+                            Instr::Binary(BinaryOp::I32Shl),
+                            Instr::Local(LocalOp::Set, _4),
+                            Instr::Local(LocalOp::Get, _5),
+                            Instr::Local(LocalOp::Get, _6),
+                            Instr::Binary(BinaryOp::I32ShrS),
+                            Instr::Local(LocalOp::Set, _7),
+                            Instr::Local(LocalOp::Get, idx1),
+                            Instr::Local(LocalOp::Get, idx2),
+                            Instr::Binary(BinaryOp::I32Mul),
+                            Instr::Local(LocalOp::Set, idx3),
+                        ) => {
+                            // char mul
+                            if *num == 24 {
+                                log_info!(
+                                    "Char mul check in func({})",
+                                    Yellow.paint(cur_func_name)
+                                );
+
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                let new_local2 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                //new_instrs.push(Instr::Const(Val::I32(24)));
+                                //new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 24
+                                //new_instrs.push(Instr::Const(Val::I32(24)));
+                                //new_instrs.push(Instr::Binary(BinaryOp::I32ShrS));  // result >> 24
+                                new_instrs.push(Instr::Const(Val::I32(255)));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                new_instrs.push(Instr::Const(Val::I32(0)));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32Or));
+                                new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                                new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
+                                new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
+                                //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
+                                new_instrs.push(Instr::End);
+                            } else if *num == 16 {
+                                // short mul
+                                log_info!(
+                                    "Short mul check in func({})",
+                                    Yellow.paint(cur_func_name)
+                                );
+
+                                let new_local1 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                let new_local2 = add_fresh_local(
+                                    &mut code.locals,
+                                    func_param_count,
+                                    ValType::I32,
+                                );
+                                new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                //new_instrs.push(Instr::Const(Val::I32(16)));
+                                //new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 16
+                                //new_instrs.push(Instr::Const(Val::I32(16)));
+                                //new_instrs.push(Instr::Binary(BinaryOp::I32ShrS));  // result >> 16
+                                new_instrs.push(Instr::Const(Val::I32(65535)));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                                new_instrs.push(Instr::Const(Val::I32(0)));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32Or));
+                                new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                                new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
+                                new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                                new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
+                                //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
+                                new_instrs.push(Instr::End);
+                            }
+                        }
+                        _ => {}
+                    }
+
+                    if i + 4 >= code.body.len() {
+                        i += 1;
+                        continue;
+                    }
+                    match (
+                        &code.body[i],
+                        &code.body[i + 1],
+                        &code.body[i + 2],
+                        &code.body[i + 3],
+                        &code.body[i + 4],
+                    ) {
+                        (
+                            Instr::Binary(BinaryOp::I32Add),
+                            Instr::Local(LocalOp::Set, _1),
+                            Instr::Local(LocalOp::Get, _2),
+                            Instr::Local(LocalOp::Get, _3),
+                            Instr::Store(StoreOp::I32Store8, ..),
+                        ) => {
+                            // char add
+                            log_info!("Char add check in func({})", Yellow.paint(cur_func_name));
+                            let new_local1 =
+                                add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                            let new_local2 =
+                                add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                            new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                            new_instrs.push(Instr::Const(Val::I32(24)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 24
+                            new_instrs.push(Instr::Const(Val::I32(24)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32ShrS)); // result >> 24
+                            new_instrs.push(Instr::Const(Val::I32(127)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                            new_instrs.push(Instr::Const(Val::I32(-128)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32Or));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
+                            //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                            //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        (
+                            Instr::Binary(BinaryOp::I32Add),
+                            Instr::Local(LocalOp::Set, _1),
+                            Instr::Local(LocalOp::Get, _2),
+                            Instr::Local(LocalOp::Get, _3),
+                            Instr::Store(StoreOp::I32Store16, ..),
+                        ) => {
+                            // short add
+                            log_info!("Short add check in func({})", Yellow.paint(cur_func_name));
+                            let new_local1 =
+                                add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                            let new_local2 =
+                                add_fresh_local(&mut code.locals, func_param_count, ValType::I32);
+                            new_instrs.push(Instr::Local(LocalOp::Tee, new_local1));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                            new_instrs.push(Instr::Const(Val::I32(16)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32Shl)); // result << 16
+                            new_instrs.push(Instr::Const(Val::I32(16)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32ShrS)); // result >> 16
+                            new_instrs.push(Instr::Const(Val::I32(32767)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32GtS));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local1));
+                            new_instrs.push(Instr::Const(Val::I32(-32768)));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32LtS));
+                            new_instrs.push(Instr::Binary(BinaryOp::I32Or));
+                            new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                            new_instrs.push(Instr::Local(LocalOp::Set, new_local2));
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                            new_instrs.push(Instr::Local(LocalOp::Get, new_local2));
+                            new_instrs.push(Instr::BrIf(Label::from(0 as usize)));
+                            //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                            //new_instrs.push(Instr::Call(proc_exit_idx));
+                            new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        }
+                        _ => {}
+                    }
+
+                    /* if (i+ 4 >= code.body.len() || i < 2){
+                        i += 1;
+                        continue;
+                    }
+                    match (&code.body[i-2],&code.body[i-1],&code.body[i],&code.body[i+1],&code.body[i+2],
+                            &code.body[i+3],&code.body[i+4]){
+                        (Instr::Local(LocalOp::Get,idx1), // b
+                        Instr::Local(LocalOp::Get,idx2), // a
+                        Instr::Binary(BinaryOp::I32Shl), // I32Shl
+                        Instr::Local(LocalOp::Set,_idx3),
+                        Instr::Local(LocalOp::Get,idx4),
+                        Instr::Local(LocalOp::Get,idx5),
+                        Instr::Binary(BinaryOp::I32ShrS), // I32Shr_S
+                        ) => {
+
+                            log_info!("Call function({}) in func({})"
+                                ,Yellow.paint("i32_is_shift_overflow")
+                                ,Yellow.paint(cur_func_name));
+                                new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                                new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+
+                                new_instrs.push(Instr::Const(Val::I32(1)));
+                                new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                                new_instrs.push(Instr::Binary(BinaryOp::I32Shl));
+
+                                new_instrs.push(Instr::Call(i32_mul_target_index));
+                                new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                                //new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        },
+                        (Instr::Local(LocalOp::Get,idx1),
+                        Instr::Local(LocalOp::Get,idx2),
+                        Instr::Binary(BinaryOp::I64Shl), // I64SHl
+                        Instr::Local(LocalOp::Set,_idx3)) => {
+                            log_info!("Call function({}) in func({})"
+                                ,Yellow.paint("i64_is_shift_overflow")
+                                ,Yellow.paint(cur_func_name));
+                            new_instrs.push(Instr::Block(FunctionType::new(&[], &[])));
+                                new_instrs.push(Instr::Local(LocalOp::Get, *idx1));
+
+                                new_instrs.push(Instr::Const(Val::I64(1)));
+                                new_instrs.push(Instr::Local(LocalOp::Get, *idx2));
+                                new_instrs.push(Instr::Binary(BinaryOp::I64Shl));
+
+                                new_instrs.push(Instr::Call(i64_mul_target_index));
+                                new_instrs.push(Instr::Unary(UnaryOp::I32Eqz));
+                                new_instrs.push(Instr::BrIf(Label::from(0 as usize))); // 没有溢出，跳出
+                            // new_instrs.push(Instr::Const(Val::I32(19))); // return 19
+                                //new_instrs.push(Instr::Call(proc_exit_idx));
+                                new_instrs.push(Instr::Unreachable);
+                            new_instrs.push(Instr::End);
+                        },
+                        _ => {},
+                    } */
+                    i += 1;
+                } // end for while
+                code.body = new_instrs;
+            } // end for if_let
+        } else {
+            continue;
+        }
+    } // end for for
+      /*     if !i32_add_flag{
+          module.remove_function_with_name("is_i32_sign_add_overflow".to_string());
+          log_info!("Remove function({}) from target module",Cyan.paint("is_i32_sign_add_overflow"));
+      }
+      if !i64_add_flag{
+          module.remove_function_with_name("is_i64_sign_add_overflow".to_string());
+          log_info!("Remove function({}) from target module",Cyan.paint("is_i64_sign_add_overflow"));
+      }
+      if !i32_sub_flag{
+          module.remove_function_with_name("is_i32_sign_sub_overflow".to_string());
+          log_info!("Remove function({}) from target module",Cyan.paint("is_i32_sign_sub_overflow"));
+      }
+      if !i64_sub_flag{
+          module.remove_function_with_name("is_i64_sign_sub_overflow".to_string());
+          log_info!("Remove function({}) from target module",Cyan.paint("is_i64_sign_sub_overflow"));
+      } */
+    let _ = module
+        .to_file(output)
+        .expect("Fail to encode the Wasm Module!");
 }
 
 pub fn float_divide_by_zero(input: &str, output: &str) {
