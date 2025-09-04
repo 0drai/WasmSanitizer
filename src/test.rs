@@ -16,8 +16,8 @@ use wasabi_wasm::{
 use wasabi_wasm::{FunctionType, Idx, Label, Memarg, Mutability, Val, ValType};
 use wasm_encoder::BlockType;
 
-const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH: &str = "./funcs/signed_integer_overflow.wasm";
-const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL: &str = "./funcs/mul_check.wasm";
+const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH: &str = "/home/oussama/mywbsan/funcs/signed_integer_overflow.wasm";
+const SIGNED_INTEGER_OVERFLOW_FUNCS_PATH_MUL: &str = "/home/oussama/mywbsan/funcs/mul_check.wasm";
 const SIGNED_INTEGER_OVERFLOW_FUNCS: [&str; 6] = [
     "is_i32_sign_add_overflow",
     "is_i64_sign_add_overflow",
@@ -1734,10 +1734,13 @@ pub fn instrument_with_heap_canary_check(input: &str, output: &str) {
             vec![Instr::Const(Val::I32(0)), Instr::End],
         );
 
-        // TODO detect malloc by other heuristics than by name.
-        let (_, malloc) = find_func_by_name("dlmalloc", m.functions_mut())
-            .expect("Aborting: Could not find malloc function");
-
+        let (_, malloc) = match find_func_by_name("dlmalloc", m.functions_mut()) {
+            Some(found_func) => found_func,
+            None => {
+                find_func_by_name("malloc", m.functions_mut())
+                    .expect("Aborting: Could not find 'dlmalloc' or 'malloc' function")
+            }
+        };
         let malloc_p0 = get_param_n_idx(malloc, 0);
         let malloc_size = malloc.add_fresh_local(ValType::I32);
 
@@ -1850,8 +1853,13 @@ pub fn instrument_with_heap_canary_check(input: &str, output: &str) {
         );
         insert_postfix(malloc, &mut post_fix);
 
-        let (_, free) = find_func_by_name("dlfree", m.functions_mut())
-            .expect("Aborting: Could not find free function");
+        let (_, free) = match find_func_by_name("dlfree", m.functions_mut()) {
+            Some(found_func) => found_func,
+            None => {
+                find_func_by_name("free", m.functions_mut())
+                    .expect("Aborting: Could not find 'dlmalloc' or 'malloc' function")
+            }
+        };
 
         fn get_canary_check_block(
             chunk_data_ptr: Idx<Local>,
